@@ -1,396 +1,201 @@
 <template>
-  <div class="row mt-3">
-    <div class="col-12 col-md-8">
-      <div class="alert alert-secondary mb-3 pb-1">
-        <div class="fw-bold mb-3">Skill Levels</div>
-        <div class="bg-dark text-light rounded p-3 mb-3">
-          <b>Skill Level</b> refers to the level of the action you are
-          performing: Battling, Mining, Woodcutting, Quarrying, Runecrafting,
-          Jewelrymaking, or Alchemy).
-        </div>
-        <div class="row mb-0 pb-0">
-          <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-3">
-            <FloatInput
-              :min="1"
-              :value="skillLevel"
-              label="Skill Level"
-              @eInput="setSkillLevel($event)"
-            />
-          </div>
-          <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-3">
-            <FloatInput
-              :min="0"
-              :max="125"
-              :limit="125"
-              :value="premiumDrop"
-              label="Premium - Drop Boost (%)"
-              @eInput="setPremiumDrop($event)"
-            />
-          </div>
-          <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-3">
-            <div class="form-floating">
-              <select
-                class="form-select form-select-lg text-capitalize"
-                v-model="land"
-              >
-                <option
-                  v-for="(land, i) in landLevels"
-                  :key="i"
-                  v-bind:value="i"
-                >
-                  <span class="text-capitalize">{{ land }} ({{ i }})</span>
-                </option>
-              </select>
-              <label class="text-light fw-bold">Land</label>
-            </div>
-          </div>
-          <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-3">
-            <FloatInput
-              :min="0"
-              :value="clanDropTotem"
-              label="Clan - Drop Totem Level"
-              @eInput="setClanDropTotem($event)"
-            />
-          </div>
-          <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-3">
-            <FloatInput
-              :min="0"
-              :max="150"
-              :limit="150"
-              :value="treasureHunterLevel"
-              label="Treasure Hunter Level"
-              @eInput="setTreasureHunterLevel($event)"
-            />
-          </div>
-          <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-3">
-            <div class="form-floating">
-              <select
-                class="form-select form-select-lg text-capitalize"
-                v-model="treasureHunterRarity"
-              >
-                <option
-                  v-for="(rarity, i) in treasureHunterRarities"
-                  :key="i"
-                  v-bind:value="i"
-                >
-                  <span class="text-capitalize">{{ rarity }}</span>
-                </option>
-              </select>
-              <label class="text-light fw-bold">Treasure Hunter Rarity</label>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="row">
+    <div class="col-3 h4 p-3 text-end">Type</div>
+    <div class="col">
+      <TypeSelect @setType="setType" />
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-3 h4 p-3 text-end">Rarity</div>
+    <div class="col">
+      <RaritySelect @setRarity="setRarity" />
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-3 h4 p-3 text-end">Tier</div>
+    <div class="col">
+      <TierSelect @setTier="setTier" />
+    </div>
+  </div>
 
-      <div class="alert alert-secondary mb-3 pb-1">
-        <div class="d-flex justify-content-between">
-          <div class="fw-bold">Trinkets</div>
-
-          <button
-            class="btn btn-sm btn-primary fw-bold"
-            v-if="trinkets.length < 3"
-            @click="addTrinket()"
-          >
-            Add Trinket
-          </button>
-        </div>
-        <div class="">
-          <p v-if="trinkets.length == 0">You have no trinket identified.</p>
-          <div v-for="(trinket, i) in trinkets" :key="i">
-            <div class="mb-3">
-              <Trinket
-                :resourceBase="trinket.resourceBase"
-                :resourceBoost="trinket.resourceBoost"
-                :dropBoost="trinket.dropBoost"
-                @eInput="updateTrinket(i, $event)"
-                @removeTrinket="removeTrinket(i)"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="alert alert-secondary mb-3 pb-3">
-          <div class="bg-dark text-light rounded p-3 mb-3">
-            Enter the typical amount of actions per day that your character
-            performs.
-          </div>
-          <FloatInput
-            :value="actions"
-            label="Actions Per Day"
-            @eInput="setActions($event)"
-          />
-        </div>
-      </div>
+  <div class="row mb-3">
+    <div class="col">
+      <button class="w-100 btn btn-primary btn-lg" @click="rollMods()">
+        Generate New
+      </button>
     </div>
     <div class="col">
-      <div class="alert alert-secondary mb-3">
-        <div class="text-center">
-          A trinket drop every<br />
-          <span class="fw-bold h4">{{ totalOutput.toLocaleString() }}</span
+      <button class="w-100 btn btn-success btn-lg disabled">Reroll</button>
+    </div>
+  </div>
+
+  <div v-for="(mod, i) in modsByRarity" :key="mod.id">
+    <div v-if="rolls.length" class="alert alert-dark mb-3">
+      <div class="text-light row">
+        <div class="col-6 col-sm-3">
+          <div class="bg-white rounded">
+            <button class="w-100 btn-sm btn btn-outline-secondary fw-bold">
+              {{ mod.label }}
+            </button>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3 text-center">
+          <span class="badge bg-secondary"
+            >{{ rollsByRarity[i].total
+            }}<span v-show="mod.percent">%</span></span
           ><br />
-          actions
-        </div>
-        <br />
-        <div class="row">
-          <div class="col-7">Two trinket chance</div>
-          <div class="col">{{ twoTrinketChance.toLocaleString() }}%</div>
-        </div>
-        <div class="row mb-5">
-          <div class="col-7">Rarity increase chance</div>
-          <div class="col">{{ rarityChance.toLocaleString() }}%</div>
-        </div>
-        <div class="row">
-          <div class="col-7">
-            <span class="badge border border-primary rounded border-3"
-              >Rare</span
-            >
-          </div>
-          <div class="col">{{ rareChance.toLocaleString() }}%</div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-7">
-            <span class="badge border border-yellow rounded border-3"
-              >Epic</span
-            >
-          </div>
-          <div class="col">{{ epicChance.toLocaleString() }}%</div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-7">
-            <span class="badge border border-warning rounded border-3"
-              >Legendary</span
-            >
-          </div>
-          <div class="col">{{ legendaryChance.toLocaleString() }}%</div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-7">
-            <span class="badge border border-danger rounded border-3"
-              >Mythic</span
-            >
-          </div>
-          <div class="col">{{ mythicChance.toLocaleString() }}%</div>
-        </div>
-      </div>
-      <!-- Actions By Type Per Day -->
-      <div class="alert alert-secondary">
-        <p>
-          Based on <b>{{ actions.toLocaleString() }}</b> actions per day, you
-          should expect a trinket every
-          {{ actionsPerTrinket.toLocaleString() }} actions, or
-          {{ (actionsPerTrinket / actions).toLocaleString() }} days.
-        </p>
-        <p>
-          <span class="badge border border-primary rounded border-3">Rare</span>
-          every {{ actionsPerRare.toLocaleString() }} actions, or
-          {{ (actionsPerRare / actions).toLocaleString() }} days.
-        </p>
-        <p>
-          <span class="badge border border-yellow rounded border-3">Epic</span>
-          every {{ actionsPerEpic.toLocaleString() }} actions, or
-          {{ (actionsPerEpic / actions).toLocaleString() }} days.
-        </p>
-        <p>
-          <span class="badge border border-warning rounded border-3"
-            >Legendary</span
+          <span class="badge bg-white text-light"
+            >{{ rollsByRarity[i].base
+            }}<span v-show="mod.percent">%</span></span
           >
-          every {{ actionsPerLegendary.toLocaleString() }} actions, or
-          {{ (actionsPerLegendary / actions).toLocaleString() }} days.
-        </p>
-        <p>
-          <span class="badge border border-danger rounded border-3"
-            >Mythic</span
-          >
-          every {{ actionsPerMythic.toLocaleString() }} actions, or
-          {{ (actionsPerMythic / actions).toLocaleString() }} days.
-        </p>
+        </div>
+        <div class="col-12 col-sm-6">
+          <div class="d-flex">
+            <div class="me-3">
+              <span class="badge bg-secondary"
+                >{{ mod.min }}<span v-show="mod.percent">%</span></span
+              >
+              <span class="badge bg-white text-light"
+                >{{ mod.minBase }}<span v-show="mod.percent">%</span></span
+              >
+            </div>
+            <input
+              type="range"
+              class="form-range"
+              :min="mod.min"
+              :max="mod.max"
+              step="0.1"
+              :value="rollsByRarity[i]"
+              disabled
+              id="customRange3"
+            />
+            <div class="ms-3">
+              <span class="badge bg-secondary"
+                >{{ mod.max }}<span v-show="mod.percent">%</span></span
+              >
+              <span class="badge bg-white text-light"
+                >{{ mod.maxBase }}<span v-show="mod.percent">%</span></span
+              >
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="mb-5"></div>
+
+  <div class="mb-5">
+    <pre class="text-start d-none">{{ modsJson }}</pre>
+  </div>
 </template>
 
 <script>
-import FloatInput from "@/components/FloatInput";
+//import FloatInput from "@/components/FloatInput";
+import TypeSelect from "@/components/TypeSelect";
+import RaritySelect from "@/components/RaritySelect";
+import TierSelect from "@/components/TierSelect";
 
-import Trinket from "@/components/Trinket"; // boost, base
+import modsJson from "@/data/mods";
 /*
 To show action rare, epic, legendary ONLY chance, subtract out the chance for the 'level up'
 */
 export default {
   name: "Main",
   components: {
-    FloatInput,
-    Trinket
+    TypeSelect,
+    RaritySelect,
+    TierSelect
   },
   data() {
     return {
-      verbose: 0,
-      actions: 10000,
-      skillLevel: 1,
-      land: 0,
-      landLevels: [
-        "no land",
-        "camp",
-        "small village",
-        "village",
-        "large village",
-        "small town",
-        "town",
-        "large town",
-        "small city",
-        "city",
-        "large city",
-        "small kingdom",
-        "kingdom",
-        "large kingdom",
-        "small empire",
-        "empire",
-        "large empire"
-      ],
-      treasureHunterRarities: [
-        "common (white)",
-        "uncommon (green)",
-        "rare (blue)",
-        "epic (yellow)",
-        "legendary (orange)",
-        "mythic (red)"
-      ],
-      trinkets: [], // ask for 3 values (resource boost and base)
-      premiumDrop: 0,
-      clanDropTotem: 0,
-      treasureHunterLevel: 0,
-      treasureHunterRarity: 0
+      modsJson: modsJson,
+      type: "battling",
+      rarity: "rare",
+      tier: 1,
+      rolls: []
     };
   },
   computed: {
-    actionsPerTrinket() {
-      let actions = this.totalOutput / (1 + this.twoTrinketChance / 100);
-      //actions *= this.rareChance / 100;
-      return Math.round(actions);
-    },
-    actionsPerRare() {
-      let actions = this.actionsPerTrinket;
-      actions /= this.rareChance / 100;
-      return Math.round(actions);
-    },
-    actionsPerEpic() {
-      let actions = this.actionsPerTrinket;
-      actions /= this.epicChance / 100;
-      return Math.round(actions);
-    },
-    actionsPerLegendary() {
-      let actions = this.actionsPerTrinket;
-      actions /= this.legendaryChance / 100;
-      return Math.round(actions);
-    },
-    actionsPerMythic() {
-      let actions = this.actionsPerTrinket;
-      actions /= this.mythicChance / 100;
-      return Math.round(actions);
-    },
-    twoTrinketChance() {
-      let chance = 0;
-      chance += this.treasureHunterLevel >= 50 ? 10 : 0;
-      chance += this.treasureHunterLevel >= 75 ? 20 : 0;
-      chance += this.treasureHunterLevel >= 100 ? 30 : 0;
-      chance += this.treasureHunterLevel >= 150 ? 40 : 0;
+    modsByType() {
+      let mods = [...this.modsJson];
+      let filteredMods = mods.filter(
+        (mod) => mod.type == this.type || mod.type == "both"
+      );
 
-      return chance;
+      return filteredMods;
     },
-    rarityChance() {
-      let chance = 0;
-      chance += this.treasureHunterLevel * 0.05;
-      chance += this.treasureHunterRarity;
+    rarityMod() {
+      switch (this.rarity) {
+        case "epic":
+          return 1.15;
 
-      return chance;
-    },
-    rareChance() {
-      let chance = 100;
-      chance -= this.epicChance;
-      chance -= this.legendaryChance;
-      chance -= this.mythicChance;
+        case "legendary":
+          return 1.35;
 
-      return chance;
-    },
-    epicChance() {
-      let chance = 0;
-      chance += this.rarityChance;
-      chance -= this.legendaryChance;
-      chance -= this.mythicChance;
-      return chance;
-    },
-
-    legendaryChance() {
-      let chance = 0;
-      chance += Math.pow(this.rarityChance, 2);
-      chance = chance / 100;
-
-      chance -= this.mythicChance;
-
-      return chance;
-    },
-    mythicChance() {
-      let chance = 0;
-      chance += Math.pow(this.rarityChance, 3);
-
-      chance = chance / 10000;
-
-      return chance;
-    },
-    totalOutput() {
-      let total =
-        125000 /
-        (1 + this.trinketDropChanceTotal / 100) /
-        (1 + this.dropBoostTotal / 100);
-
-      total = Math.round(total);
-      return total;
-    },
-    trinketDropChanceTotal() {
-      let total = 0;
-
-      total += this.skillLevelTotal * 1; // number. (1-200)
-      total += this.land * 2; // number (0-24)
-      total += this.treasureHunterLevel * 3; //1-150)
-
-      return total;
-    },
-    dropBoostTotal() {
-      let total = 0;
-
-      total += this.clanDropTotem * 2; // % 20 -> 40%
-      total += this.premiumDrop; // % - 0 - 125%
-      total += this.trinketDropBoostTotal; // %
-
-      return total;
-    },
-    skillLevelTotal() {
-      /*
-      1% <= 100
-      2% > 100
-*/
-      let total = 0;
-      total += this.skillLevel;
-
-      if (this.skillLevel > 100) {
-        total += this.skillLevel - 100;
+        case "mythic":
+          return 1.6;
       }
 
-      return total;
+      return 1; // rare
     },
-    trinketDropBoostTotal() {
-      let total = 0;
+    modsByRarity() {
+      let mods = [...this.modsByType];
+      let newMods = mods.map((_mod) => {
+        let mod = { ..._mod };
+        mod.minBase = mod.min;
+        mod.maxBase = mod.max;
+        mod.min = mod.minBase * this.rarityMod * this.tier;
+        mod.max = mod.maxBase * this.rarityMod * this.tier;
 
-      this.trinkets.map((trinket) => {
-        total += trinket.dropBoost;
+        mod.minBase = Math.round(mod.minBase * 100) / 100;
+        mod.maxBase = Math.round(mod.maxBase * 100) / 100;
+        mod.min = Math.round(mod.min * 100) / 100;
+        mod.max = Math.round(mod.max * 100) / 100;
+
+        return mod;
       });
 
-      return total;
+      return newMods;
+    },
+    rollsByRarity() {
+      let rolls = [...this.rolls];
+      let newRolls = rolls.map((_roll) => {
+        let roll = _roll * this.rarityMod * this.tier;
+        roll = Math.round(roll * 100) / 100;
+        return {
+          total: roll,
+          base: _roll
+        };
+      });
+
+      return newRolls;
     }
   },
   methods: {
+    setType(value) {
+      this.type = value;
+      this.rolls = [];
+    },
+    setRarity(value) {
+      this.rarity = value;
+    },
+    setTier(value) {
+      this.tier = value;
+    },
+    rollMods() {
+      this.rolls = this.modsByType.map((mod) => {
+        let max = mod.max * 10;
+        let min = mod.min * 10;
+        let roll = Math.floor(Math.random() * (max - min + 1) + min);
+
+        roll /= 10;
+        if (mod.step == 1) {
+          roll = Math.round(roll);
+        }
+
+        return roll;
+      });
+    },
+    generateTrinket() {},
     setSkillLevel(value) {
       this.skillLevel = value;
     },
@@ -422,13 +227,3 @@ export default {
 };
 // "ActionsForMythicDrop/(((EpicDrop%/MythicDrop%)*EpicEssense)+((LegendaryDrop%/MythicDrop%)*LegendaryEssense)+((MythicDrop%/MythicDrop%)*MythicEssense))"
 </script>
-
-<style scoped>
-/*
-.badge {
-  -webkit-text-fill-color: white;
-  -webkit-text-stroke-width: 0.4px;
-  -webkit-text-stroke-color: black;
-}
-*/
-</style>
