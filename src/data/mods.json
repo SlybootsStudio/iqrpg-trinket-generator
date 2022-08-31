@@ -52,6 +52,15 @@
     "step": 0.1
   },
   {
+    "id": "gatheringshard",
+    "label": "Gathering Shard Boost",
+    "type": "gathering",
+    "percent": true,
+    "min": 0.9,
+    "max": 1.8,
+    "step": 0.1
+  },
+  {
     "id": "attributeboost",
     "label": "Attribute Boost",
     "type": "battling",
@@ -102,7 +111,7 @@
     "type": "battling",
     "percent": false,
     "min": 50,
-    "max": 100,
+    "max": 75,
     "step": 1
   },
   {
@@ -121,6 +130,6 @@
     "percent": false,
     "min": 50,
     "max": 75,
-    "step" : 1
+    "step": 1
   }
 ]

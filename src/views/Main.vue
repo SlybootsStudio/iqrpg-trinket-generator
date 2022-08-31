@@ -2,85 +2,47 @@
   <div class="row">
     <div class="col-3 h4 p-3 text-end">Type</div>
     <div class="col">
-      <TypeSelect @setType="setType" />
+      <TypeSelect @setType="setType($event)" />
     </div>
   </div>
   <div class="row">
     <div class="col-3 h4 p-3 text-end">Rarity</div>
     <div class="col">
-      <RaritySelect @setRarity="setRarity" />
+      <RaritySelect @setRarity="setRarity($event)" />
     </div>
   </div>
   <div class="row">
     <div class="col-3 h4 p-3 text-end">Tier</div>
     <div class="col">
-      <TierSelect @setTier="setTier" />
+      <TierSelect
+        @setTier="setTier($event)"
+        :limit="rarityTierLimit"
+        :updateValue="tier"
+      />
     </div>
   </div>
 
   <div class="row mb-3">
     <div class="col">
-      <button class="w-100 btn btn-primary btn-lg" @click="rollMods()">
+      <button class="w-100 btn btn-primary btn-lg fw-bold" @click="rollMods()">
         Generate New
       </button>
     </div>
     <div class="col">
-      <button class="w-100 btn btn-success btn-lg disabled">Reroll</button>
+      <button class="w-100 btn btn-success btn-lg fw-bold disabled">
+        Reroll
+      </button>
     </div>
   </div>
 
-  <div v-for="(mod, i) in modsByRarity" :key="mod.id">
-    <div v-if="rolls.length" class="alert alert-dark mb-3">
-      <div class="text-light row">
-        <div class="col-6 col-sm-3">
-          <div class="bg-white rounded">
-            <button class="w-100 btn-sm btn btn-outline-secondary fw-bold">
-              {{ mod.label }}
-            </button>
-          </div>
-        </div>
-        <div class="col-6 col-sm-3 text-center">
-          <span class="badge bg-secondary"
-            >{{ rollsByRarity[i].total
-            }}<span v-show="mod.percent">%</span></span
-          ><br />
-          <span class="badge bg-white text-light"
-            >{{ rollsByRarity[i].base
-            }}<span v-show="mod.percent">%</span></span
-          >
-        </div>
-        <div class="col-12 col-sm-6">
-          <div class="d-flex">
-            <div class="me-3">
-              <span class="badge bg-secondary"
-                >{{ mod.min }}<span v-show="mod.percent">%</span></span
-              >
-              <span class="badge bg-white text-light"
-                >{{ mod.minBase }}<span v-show="mod.percent">%</span></span
-              >
-            </div>
-            <input
-              type="range"
-              class="form-range"
-              :min="mod.min"
-              :max="mod.max"
-              step="0.1"
-              :value="rollsByRarity[i]"
-              disabled
-              id="customRange3"
-            />
-            <div class="ms-3">
-              <span class="badge bg-secondary"
-                >{{ mod.max }}<span v-show="mod.percent">%</span></span
-              >
-              <span class="badge bg-white text-light"
-                >{{ mod.maxBase }}<span v-show="mod.percent">%</span></span
-              >
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div v-if="rolls.length">
+    <ModBar
+      v-for="(mod, i) in modsByRarity"
+      :key="mod.id"
+      v-bind="mod"
+      :rollTotal="rollsByRarity[i].total"
+      :rollBase="rollsByRarity[i].base"
+    />
   </div>
 
   <div class="mb-5">
@@ -93,6 +55,7 @@
 import TypeSelect from "@/components/TypeSelect";
 import RaritySelect from "@/components/RaritySelect";
 import TierSelect from "@/components/TierSelect";
+import ModBar from "@/components/ModBar";
 
 import modsJson from "@/data/mods";
 /*
@@ -103,14 +66,15 @@ export default {
   components: {
     TypeSelect,
     RaritySelect,
-    TierSelect
+    TierSelect,
+    ModBar
   },
   data() {
     return {
       modsJson: modsJson,
-      type: "battling",
-      rarity: "rare",
-      tier: 1,
+      type: "battling", // Settings
+      rarity: "rare", // Settings
+      tier: 1, // Settings
       rolls: []
     };
   },
@@ -136,6 +100,34 @@ export default {
       }
 
       return 1; // rare
+    },
+    rarityTierLimit() {
+      switch (this.rarity) {
+        case "epic":
+          return 8;
+
+        case "legendary":
+          return 9;
+
+        case "mythic":
+          return 10;
+      }
+
+      return 7; // rare
+    },
+    rarityModLimit() {
+      switch (this.rarity) {
+        case "epic":
+          return 4;
+
+        case "legendary":
+          return 5;
+
+        case "mythic":
+          return 6;
+      }
+
+      return 3; // rare
     },
     modsByRarity() {
       let mods = [...this.modsByType];
@@ -177,12 +169,22 @@ export default {
     },
     setRarity(value) {
       this.rarity = value;
+
+      //
+      // Set the tier down if above the rarity cap
+      //
+      if (this.tier > this.rarityTierLimit) {
+        this.tier = this.rarityTierLimit;
+      }
     },
     setTier(value) {
+      console.log("TIER", value);
       this.tier = value;
     },
     rollMods() {
-      this.rolls = this.modsByType.map((mod) => {
+      this.modsJson = this.shuffle(this.modsJson);
+      let _rolls = [...this.modsByType];
+      this.rolls = _rolls.map((mod) => {
         let max = mod.max * 10;
         let min = mod.min * 10;
         let roll = Math.floor(Math.random() * (max - min + 1) + min);
@@ -222,8 +224,18 @@ export default {
     },
     setActions(value) {
       this.actions = value;
+    },
+    /**
+     * Shuffles array in place. ES6 version
+     * @param {Array} a items An array containing the items.
+     */
+    shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
     }
   }
 };
-// "ActionsForMythicDrop/(((EpicDrop%/MythicDrop%)*EpicEssense)+((LegendaryDrop%/MythicDrop%)*LegendaryEssense)+((MythicDrop%/MythicDrop%)*MythicEssense))"
 </script>

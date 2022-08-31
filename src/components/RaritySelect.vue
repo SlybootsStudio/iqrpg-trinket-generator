@@ -1,6 +1,6 @@
 <template>
   <div class="alert alert-dark p-2">
-    <div class="btn-group bg-white w-100" role="group">
+    <div class="btn-group bg-white w-100 rounded" role="group">
       <input
         v-model="type"
         type="radio"
@@ -51,6 +51,7 @@
 <script>
 export default {
   name: "TypeSelect",
+  emits: ["setRarity"],
   data() {
     return {
       type: "rare"
