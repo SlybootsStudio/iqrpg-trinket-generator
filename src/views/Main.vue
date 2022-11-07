@@ -34,6 +34,19 @@
       </button>
     </div>
   </div>
+  
+  <div class="row mb-3">
+    <div class="col">
+      <button class="w-100 btn btn-primary btn-lg fw-bold" @click="rollMods()">
+        Generate New
+      </button>
+    </div>
+    <div class="col">
+      <button class="w-100 btn btn-success btn-lg fw-bold disabled">
+        Reroll
+      </button>
+    </div>
+  </div>
 
   <div v-if="rolls.length">
     <ModBar
